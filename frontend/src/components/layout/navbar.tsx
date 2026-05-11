@@ -1,14 +1,17 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, LogOut } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { NotificationDropdown } from "@/components/notifications/notification_dropdown";
+import { useAuthStore } from "@/store/auth_store";
 
 export function Navbar() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -20,6 +23,21 @@ export function Navbar() {
       router.push(`/explore?q=${encodeURIComponent(search)}`);
     }
   }
+
+  function handleLogout() {
+    window.localStorage.removeItem("event_planner_token");
+    clearAuth();
+    router.push("/login");
+  }
+
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((segment) => segment[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "AP";
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-line bg-white px-5">
@@ -49,9 +67,22 @@ export function Navbar() {
           </div>
         ) : null}
       </div>
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-zinc-200">AY</span>
-        Ali Yilmaz
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-100 px-3 py-2">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-800 text-sm font-bold text-white">{initials}</span>
+          <div className="hidden sm:block">
+            <p className="text-sm font-semibold text-slate-900">{user?.name ?? "Misafir"}</p>
+            <p className="text-xs text-slate-500">{user?.email ?? "Giriş yapılmadı"}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          onClick={handleLogout}
+          aria-label="Çıkış yap"
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
       </div>
     </header>
   );

@@ -1,6 +1,26 @@
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models.user import User
+
+
 class UserRepository:
-    def get_by_email(self, email: str) -> dict | None:
-        return {"id": 1, "name": "Ali Yilmaz", "email": email}
+    def get_by_email(self, db: Session, email: str) -> User | None:
+        return db.query(User).filter(User.email == email).first()
+
+    def get_by_id(self, db: Session, user_id: int) -> User | None:
+        return db.query(User).filter(User.id == user_id).first()
+
+    def create_user(self, db: Session, name: str, email: str, password_hash: str) -> User:
+        user = User(name=name, email=email, password_hash=password_hash)
+        db.add(user)
+        try:
+            db.commit()
+            db.refresh(user)
+            return user
+        except IntegrityError as exc:
+            db.rollback()
+            raise ValueError("Email already registered") from exc
 
 
 user_repository = UserRepository()

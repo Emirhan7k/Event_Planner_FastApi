@@ -14,6 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.core.database import Base, engine
+
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(events.router, prefix="/api/events", tags=["events"])
@@ -21,6 +23,9 @@ app.include_router(recommendations.router, prefix="/api/recommendations", tags=[
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(preferences.router, prefix="/api/preferences", tags=["preferences"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+
+
+Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
