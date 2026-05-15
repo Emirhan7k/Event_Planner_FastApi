@@ -31,8 +31,9 @@ async def event_list(
         access_token=request.cookies.get("access_token"), session=session
     )
     service = EventService(session)
+    category_lower = category.lower() if category else None
     result = await service.get_events_paginated(
-        page=page, size=12, category=category, search=search
+        page=page, size=12, category=category_lower, search=search
     )
     events = result.items
     

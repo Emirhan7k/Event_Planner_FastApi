@@ -56,26 +56,33 @@ class RecommendationEngine:
     def _event_to_text(self, event: Event) -> str:
         """Convert an event to a single TF-IDF document string."""
         tags_text = " ".join(event.tags) if event.tags else ""
-        desc_snippet = (event.description or "")[:200]
-        return f"{event.title} {event.category} {tags_text} {desc_snippet}".lower().strip()
+        desc_snippet = (event.description or "")[:500] # Use more description
+        # Boost title and category by repeating them
+        return f"{event.title} {event.title} {event.category} {event.category} {tags_text} {desc_snippet}".lower().strip()
 
     def _build_user_profile_text(self, user: User, attended_events: list[Event]) -> str:
         """
         Build the user's interest text from:
-          - Explicit interest tags (set at registration / profile)
+          - Explicit interest tags (weighted 4x)
+          - Bio keywords (weighted 2x)
           - Category + tags of confirmed attended events
         """
         parts: list[str] = []
 
-        # Explicit interests (weighted 3x for stronger signal)
+        # Explicit interests
         if user.interests:
             interest_text = " ".join(user.interests)
-            parts.extend([interest_text] * 3)
+            parts.extend([interest_text] * 4)
+
+        # Bio keywords
+        if user.bio:
+            parts.extend([user.bio] * 2)
 
         # Implicit interests from past event attendance
         for event in attended_events:
             tags_text = " ".join(event.tags) if event.tags else ""
-            parts.append(f"{event.category} {tags_text}")
+            # attended events signal category and tags
+            parts.append(f"{event.category} {event.category} {tags_text}")
 
         return " ".join(parts).lower().strip()
 
@@ -171,7 +178,7 @@ class RecommendationEngine:
 
         recommendations = [
             RecommendedEvent(
-                event_id=event.id,
+                id=event.id,
                 title=event.title,
                 description=event.description,
                 location=event.location,
@@ -179,6 +186,7 @@ class RecommendationEngine:
                 category=event.category,
                 tags=event.tags or [],
                 image_url=event.image_url,
+                source_url=event.source_url,
                 capacity=event.capacity,
                 registered_count=event.registered_count,
                 is_full=event.is_full,
@@ -224,11 +232,12 @@ class RecommendationEngine:
 
         return [
             SimilarEvent(
-                event_id=event.id,
+                id=event.id,
                 title=event.title,
                 category=event.category,
                 tags=event.tags or [],
                 image_url=event.image_url,
+                source_url=event.source_url,
                 event_date=event.event_date,
                 score=round(float(score), 4),
                 score_percent=round(float(score) * 100),

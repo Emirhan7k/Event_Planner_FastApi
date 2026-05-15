@@ -89,6 +89,13 @@
                                 hx-target="body"
                                 class="btn btn-primary" style="width: 100%;">Register Now</button>
                     {% endif %}
+
+                    {% if event.source_url %}
+                        <a href="{{ event.source_url }}" target="_blank" class="btn btn-outline" 
+                           style="width: 100%; margin-top: 1rem; border-color: var(--secondary); color: var(--secondary);">
+                           <i class="fas fa-external-link-alt"></i> View on Original Source
+                        </a>
+                    {% endif %}
                 {% else %}
                     <a href="/auth/login" class="btn btn-primary" style="width: 100%;">Login to Register</a>
                 {% endif %}

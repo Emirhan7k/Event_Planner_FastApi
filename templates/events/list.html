@@ -8,10 +8,11 @@
             <input type="text" name="search" class="search-input" placeholder="Search events, keywords, or locations..." value="{{ search or '' }}">
             <select name="category" class="search-input" style="flex: 0 0 200px;">
                 <option value="">All Categories</option>
-                <option value="Music" {% if category == 'Music' %}selected{% endif %}>Music</option>
-                <option value="Technology" {% if category == 'Technology' %}selected{% endif %}>Technology</option>
-                <option value="Food" {% if category == 'Food' %}selected{% endif %}>Food</option>
-                <option value="Art" {% if category == 'Art' %}selected{% endif %}>Art</option>
+                <option value="music" {% if category == 'music' %}selected{% endif %}>Music</option>
+                <option value="tech" {% if category == 'tech' %}selected{% endif %}>Technology</option>
+                <option value="food" {% if category == 'food' %}selected{% endif %}>Food</option>
+                <option value="art" {% if category == 'art' %}selected{% endif %}>Art</option>
+                <option value="sports" {% if category == 'sports' %}selected{% endif %}>Sports</option>
             </select>
             <button type="submit" class="btn btn-primary" style="border-radius: 2rem; padding: 0.75rem 2rem;">Explore</button>
         </form>
