@@ -1,8 +1,24 @@
 <div class="event-card glass-card">
-    <img src="{{ event.image_url or 'https://via.placeholder.com/400x200' }}" alt="{{ event.title }}" class="event-image">
+    <div class="event-image-container">
+        <a href="{{ event.source_url or '/events/' + (event.id|string) }}" {% if event.source_url %}target="_blank"{% endif %}>
+            <img src="{{ event.image_url or 'https://via.placeholder.com/400x200' }}" alt="{{ event.title }}" class="event-image">
+        </a>
+        {% if current_user %}
+            <button class="favorite-btn {% if event.is_favorited %}active{% endif %}" 
+                    hx-post="/api/v1/users/me/favorites/{{ event.id }}"
+                    hx-swap="none"
+                    onclick="this.classList.toggle('active')">
+                <i class="fa-heart {% if event.is_favorited %}fas{% else %}far{% endif %}"></i>
+            </button>
+        {% endif %}
+    </div>
     <div class="event-details">
         <span class="event-category">{{ event.category }}</span>
-        <h3 class="event-title">{{ event.title }}</h3>
+        <h3 class="event-title">
+            <a href="{{ event.source_url or '/events/' + (event.id|string) }}" {% if event.source_url %}target="_blank"{% endif %}>
+                {{ event.title }}
+            </a>
+        </h3>
         <div class="event-info">
             <span>{{ event.event_date.strftime('%B %d, %Y') }}</span> • 
             <span>{{ event.location }}</span>
@@ -12,6 +28,13 @@
                 {{ event.score_percent }}% Match
             </div>
         {% endif %}
-        <a href="/events/{{ event.id or event.event_id }}" class="btn btn-outline" style="width: 100%; text-align: center;">View Details</a>
+        <div class="event-actions">
+            <a href="/events/{{ event.id }}" class="btn btn-outline" style="flex: 1; text-align: center;">Details</a>
+            {% if event.source_url %}
+                <a href="{{ event.source_url }}" target="_blank" class="btn btn-primary" style="margin-left: 0.5rem;" title="Go to Source">
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+            {% endif %}
+        </div>
     </div>
 </div>

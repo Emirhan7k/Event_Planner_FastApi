@@ -10,6 +10,7 @@ from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.schemas.user import UserUpdate
 from app.services.user_service import UserService
+from app.services.favorite_service import FavoriteService
 from app.web.deps import require_login_cookie
 
 router = APIRouter(prefix="/profile", tags=["web-profile"])
@@ -22,11 +23,22 @@ async def profile_page(
     session: AsyncSession = Depends(get_db),
 ):
     service = UserService(session)
+    fav_service = FavoriteService(session)
     stats = await service.get_user_stats(current_user.id)
+    saved_events = await fav_service.get_user_favorites(current_user.id)
+    
+    # Mark as favorited for template logic
+    for event in saved_events:
+        setattr(event, "is_favorited", True)
+
     return templates.TemplateResponse(
         request=request,
         name="profile/index.html",
-        context={"current_user": current_user, "stats": stats},
+        context={
+            "current_user": current_user, 
+            "stats": stats,
+            "saved_events": saved_events
+        },
     )
 
 

@@ -49,6 +49,25 @@
                 <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Changes</button>
             </form>
         </div>
+
+        <div style="margin-top: 4rem;">
+            <h2 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-heart" style="color: var(--secondary);"></i> My Saved Events
+            </h2>
+            {% if saved_events %}
+                <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 0;">
+                    {% for event in saved_events %}
+                        {% include "partials/event_card.html" %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card" style="padding: 3rem; text-align: center;">
+                    <i class="far fa-calendar-alt" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-muted);">You haven't saved any events yet.</p>
+                    <a href="/events" class="btn btn-outline" style="margin-top: 1.5rem;">Browse Events</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </section>
 {% endblock %}

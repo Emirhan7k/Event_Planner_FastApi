@@ -13,6 +13,7 @@ from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.services.event_service import EventService
 from app.services.comment_service import CommentService
+from app.services.favorite_service import FavoriteService
 from app.web.deps import get_current_user_from_cookie, require_login_cookie
 
 router = APIRouter(prefix="/events", tags=["web-events"])
@@ -33,12 +34,17 @@ async def event_list(
     result = await service.get_events_paginated(
         page=page, size=12, category=category, search=search
     )
+    events = result.items
+    
+    if current_user:
+        fav_service = FavoriteService(session)
+        await fav_service.mark_favorites(events, current_user.id)
     return templates.TemplateResponse(
         request=request,
         name="events/list.html",
         context={
             "current_user": current_user,
-            "events": result.items,
+            "events": events,
             "total": result.total,
             "page": page,
             "pages": result.pages,
@@ -77,6 +83,11 @@ async def event_detail(
     comment_service = CommentService(session)
     comments = await comment_service.get_event_comments(event_id)
     
+    if current_user:
+        fav_service = FavoriteService(session)
+        is_fav = await fav_service.is_favorited(current_user.id, event_id)
+        setattr(event, "is_favorited", is_fav)
+
     return templates.TemplateResponse(
         request=request,
         name="events/detail.html",

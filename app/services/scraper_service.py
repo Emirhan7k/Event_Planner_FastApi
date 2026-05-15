@@ -41,8 +41,11 @@ class ScraperService:
             # We need an admin user to own these events
             admin = await self.user_repo.get_by_email("admin@example.com")
             if not admin:
-                # Fallback to first user or create one
-                admin = (await self.user_repo.get_paginated(limit=1))[0][0]
+                users, _ = await self.user_repo.get_paginated(limit=1)
+                if not users:
+                    logger.error("No users found in DB. Cannot own scraped events.")
+                    return 0
+                admin = users[0]
 
             count = 0
             for item in items:
@@ -66,7 +69,8 @@ class ScraperService:
                     event_date=datetime.now() + timedelta(days=7),
                     capacity=100,
                     category="tech",
-                    tags=["tech", "startup", "showcase"]
+                    tags=["tech", "startup", "showcase"],
+                    source_url=link
                 )
                 
                 # Save to DB
@@ -82,6 +86,71 @@ class ScraperService:
         except Exception as e:
             logger.error(f"Scraping failed: {str(e)}")
             raise Exception(f"Failed to scrape: {str(e)}")
+
+    async def scrape_culture_events(self) -> int:
+        """
+        Scrapes culture and art events from a sample site.
+        """
+        url = "https://www.timeout.com/istanbul/en/things-to-do"
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # In a real scenario, we might need headers to avoid blocks
+                headers = {"User-Agent": "Mozilla/5.0"}
+                response = await client.get(url, headers=headers)
+                
+            soup = BeautifulSoup(response.text, "html.parser")
+            # This is a hypothetical selector based on common patterns
+            items = soup.select("article")[:10] 
+            
+            admin = await self.user_repo.get_by_email("admin@example.com")
+            if not admin:
+                users, _ = await self.user_repo.get_paginated(limit=1)
+                if not users:
+                    return 0
+                admin = users[0]
+
+            count = 0
+            for item in items:
+                title_elem = item.select_one("h3")
+                if not title_elem:
+                    continue
+                
+                title = title_elem.get_text().strip()
+                link_elem = item.select_one("a")
+                link = ""
+                if link_elem:
+                    link = link_elem.get("href")
+                    if link and not link.startswith("http"):
+                        link = "https://www.timeout.com" + link
+                
+                # Check if event already exists
+                existing = await self.event_repo.get_paginated(search=title, limit=1)
+                if existing[0]:
+                    continue
+                
+                new_event = EventCreate(
+                    title=title,
+                    description=f"Cultural event discovered via TimeOut: {title}. More info at source.",
+                    location="Istanbul / Cultural Center",
+                    event_date=datetime.now() + timedelta(days=14),
+                    capacity=200,
+                    category="art",
+                    tags=["culture", "art", "istanbul", "featured"],
+                    source_url=link
+                )
+                
+                from app.services.event_service import EventService
+                event_service = EventService(self.session)
+                await event_service.create_event(new_event, admin)
+                count += 1
+                
+            await self.session.commit()
+            return count
+            
+        except Exception as e:
+            logger.error(f"Culture scraping failed: {str(e)}")
+            return 0
 
     async def scrape_generic_events(self, url: str) -> list[dict[str, Any]]:
         """

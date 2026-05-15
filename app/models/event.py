@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.registration import Registration
     from app.models.comment import Comment
+    from app.models.user_favorite import user_favorite_events
 
 
 class Event(Base, TimestampMixin):
@@ -27,6 +28,7 @@ class Event(Base, TimestampMixin):
     tags: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # FK
@@ -39,6 +41,9 @@ class Event(Base, TimestampMixin):
     )
     comments: Mapped[list["Comment"]] = relationship(
         "Comment", back_populates="event", lazy="selectin", cascade="all, delete-orphan"
+    )
+    favorited_by: Mapped[list["User"]] = relationship(
+        "User", secondary="user_favorite_events", back_populates="favorites", lazy="selectin"
     )
 
     @property

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.event import Event
     from app.models.registration import Registration
     from app.models.comment import Comment
+    from app.models.user_favorite import user_favorite_events
 
 
 class UserRole(str, enum.Enum):
@@ -45,6 +46,9 @@ class User(Base, TimestampMixin):
     )
     comments: Mapped[list["Comment"]] = relationship(
         "Comment", back_populates="user", lazy="selectin"
+    )
+    favorites: Mapped[list["Event"]] = relationship(
+        "Event", secondary="user_favorite_events", back_populates="favorited_by", lazy="selectin"
     )
 
     def __repr__(self) -> str:

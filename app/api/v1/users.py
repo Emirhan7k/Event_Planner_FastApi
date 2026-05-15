@@ -11,7 +11,9 @@ from app.schemas.user import (
     UserUpdate,
     UserWithStats,
 )
+from app.schemas.event import EventRead
 from app.services.user_service import UserService
+from app.services.favorite_service import FavoriteService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -38,6 +40,27 @@ async def update_me(
     service = UserService(session)
     user = await service.update_profile(current_user.id, data)
     return UserRead.model_validate(user)
+
+
+@router.get("/me/favorites", response_model=list[EventRead])
+async def get_my_favorites(
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+):
+    service = FavoriteService(session)
+    events = await service.get_user_favorites(current_user.id)
+    return [EventRead.model_validate(e) for e in events]
+
+
+@router.post("/me/favorites/{event_id}")
+async def toggle_favorite(
+    event_id: int,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+):
+    service = FavoriteService(session)
+    is_favorited = await service.toggle_favorite(current_user, event_id)
+    return {"is_favorited": is_favorited}
 
 
 @router.put("/me/interests", response_model=UserRead)

@@ -17,6 +17,7 @@ class EventCreate(BaseModel):
     capacity: int = 100
     category: str
     tags: list[str] = []
+    source_url: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -56,6 +57,7 @@ class EventUpdate(BaseModel):
     capacity: int | None = None
     category: str | None = None
     tags: list[str] | None = None
+    source_url: str | None = None
     is_active: bool | None = None
 
 
@@ -71,11 +73,13 @@ class EventRead(BaseModel):
     category: str
     tags: list[str]
     image_url: str | None
+    source_url: str | None
     is_active: bool
     owner_id: int
     created_at: datetime
     registered_count: int
     is_full: bool
+    is_favorited: bool = False
 
 
 class EventListResponse(BaseModel):
@@ -90,4 +94,5 @@ class EventDetailRead(EventRead):
     """Event with owner info and registration status."""
     owner_username: str | None = None
     is_registered: bool = False
+    is_favorited: bool = False
     recommendation_score: float | None = None
