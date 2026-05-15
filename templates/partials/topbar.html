@@ -1,0 +1,25 @@
+<header class="topbar animate-slide-in">
+    <div class="search-container-ai">
+        <i class="fas fa-search"></i>
+        <input type="text" 
+               class="search-input-ai" 
+               placeholder="Bu hafta sonu teknik yeteneklerimi geliştirebileceğim etkinlikler bul"
+               hx-get="/events"
+               hx-trigger="keyup changed delay:500ms"
+               hx-target="#event-content"
+               name="q">
+    </div>
+
+    <div class="user-actions">
+        <div class="notification-badge">
+            <i class="far fa-bell"></i>
+            <span class="badge-count">3</span>
+        </div>
+        
+        <div class="user-profile">
+            <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=random" alt="Avatar" class="user-avatar">
+            <span class="user-name">{{ current_user.username }}</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+        </div>
+    </div>
+</header>
