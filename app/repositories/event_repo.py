@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
@@ -13,7 +14,9 @@ class EventRepository(BaseRepository[Event]):
 
     async def get_active(self, id: int) -> Event | None:
         result = await self.session.execute(
-            select(Event).where(Event.id == id, Event.is_active == True)
+            select(Event)
+            .where(Event.id == id, Event.is_active == True)
+            .options(selectinload(Event.owner))
         )
         return result.scalar_one_or_none()
 

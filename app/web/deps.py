@@ -34,3 +34,12 @@ async def require_login_cookie(
         from fastapi.responses import RedirectResponse
         raise HTTPException(status_code=307, headers={"Location": "/login"})
     return user
+
+
+async def require_admin(
+    user: User = Depends(require_login_cookie),
+) -> User:
+    if user.role != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user

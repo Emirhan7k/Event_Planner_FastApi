@@ -1,0 +1,95 @@
+import asyncio
+import logging
+from datetime import datetime, timedelta
+from typing import Any
+
+import httpx
+from bs4 import BeautifulSoup
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.event import Event
+from app.models.user import User
+from app.repositories.event_repo import EventRepository
+from app.repositories.user_repo import UserRepository
+from app.schemas.event import EventCreate
+
+logger = logging.getLogger(__name__)
+
+class ScraperService:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.event_repo = EventRepository(session)
+        self.user_repo = UserRepository(session)
+
+    async def scrape_tech_events(self) -> int:
+        """
+        Scrapes events from a sample tech event site or blog.
+        For demonstration, we use a reliable news site or a mock source.
+        """
+        # We will use a demo-friendly target or a mock response if the site is down.
+        # Here we simulate scraping from a common event listing pattern.
+        url = "https://news.ycombinator.com/show" # Just an example stable site to "scrape" titles from as events
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                
+            soup = BeautifulSoup(response.text, "html.parser")
+            items = soup.select(".athing")[:10] # Get top 10 show HN items
+            
+            # We need an admin user to own these events
+            admin = await self.user_repo.get_by_email("admin@example.com")
+            if not admin:
+                # Fallback to first user or create one
+                admin = (await self.user_repo.get_paginated(limit=1))[0][0]
+
+            count = 0
+            for item in items:
+                title_elem = item.select_one(".titleline > a")
+                if not title_elem:
+                    continue
+                
+                title = title_elem.get_text()
+                link = title_elem.get("href")
+                
+                # Check if event already exists
+                existing = await self.event_repo.get_paginated(search=title, limit=1)
+                if existing[0]:
+                    continue
+                
+                # Create a pseudo-event
+                new_event = EventCreate(
+                    title=title,
+                    description=f"Automated event discovered from YCombinator Show: {link}",
+                    location="Online / Tech Hub",
+                    event_date=datetime.now() + timedelta(days=7),
+                    capacity=100,
+                    category="tech",
+                    tags=["tech", "startup", "showcase"]
+                )
+                
+                # Save to DB
+                # Note: We use the actual service or repo to create
+                from app.services.event_service import EventService
+                event_service = EventService(self.session)
+                await event_service.create_event(new_event, admin)
+                count += 1
+                
+            await self.session.commit()
+            return count
+            
+        except Exception as e:
+            logger.error(f"Scraping failed: {str(e)}")
+            raise Exception(f"Failed to scrape: {str(e)}")
+
+    async def scrape_generic_events(self, url: str) -> list[dict[str, Any]]:
+        """
+        A more generic scraper that tries to find event-like structures.
+        """
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url)
+            
+        soup = BeautifulSoup(response.text, "html.parser")
+        # Logic to find event cards would go here based on the specific site
+        return []

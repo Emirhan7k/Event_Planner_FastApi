@@ -12,6 +12,7 @@ from app.core.templates import templates
 from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.services.event_service import EventService
+from app.services.comment_service import CommentService
 from app.web.deps import get_current_user_from_cookie, require_login_cookie
 
 router = APIRouter(prefix="/events", tags=["web-events"])
@@ -73,10 +74,13 @@ async def event_detail(
         return templates.TemplateResponse(
             request=request, name="404.html", context={"current_user": current_user}, status_code=404
         )
+    comment_service = CommentService(session)
+    comments = await comment_service.get_event_comments(event_id)
+    
     return templates.TemplateResponse(
         request=request,
         name="events/detail.html",
-        context={"current_user": current_user, "event": event},
+        context={"current_user": current_user, "event": event, "comments": comments},
     )
 
 
@@ -136,3 +140,29 @@ async def create_event_submit(
             context={"current_user": current_user, "error": f"Error: {str(e)}"},
             status_code=400,
         )
+
+
+@router.post("/{event_id}/comments")
+async def add_comment_submit(
+    request: Request,
+    event_id: int,
+    content: str = Form(...),
+    rating: int = Form(5),
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(require_login_cookie),
+):
+    comment_service = CommentService(session)
+    await comment_service.add_comment(
+        user=current_user,
+        event_id=event_id,
+        content=content,
+        rating=rating
+    )
+    
+    # Return the comments list partial (HTMX)
+    comments = await comment_service.get_event_comments(event_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/comment_list.html",
+        context={"comments": comments}
+    )

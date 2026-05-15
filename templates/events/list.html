@@ -4,16 +4,16 @@
 <section style="padding-top: 8rem;">
     <div class="section-title">
         <h2>Explore Events</h2>
-        <form action="/events" method="GET" style="max-width: 600px; margin: 2rem auto; display: flex; gap: 1rem;">
-            <input type="text" name="search" class="form-control" placeholder="Search events..." value="{{ search or '' }}">
-            <select name="category" class="form-control" style="width: 200px;">
+        <form action="/events" method="GET" class="search-container">
+            <input type="text" name="search" class="search-input" placeholder="Search events, keywords, or locations..." value="{{ search or '' }}">
+            <select name="category" class="search-input" style="flex: 0 0 200px;">
                 <option value="">All Categories</option>
                 <option value="Music" {% if category == 'Music' %}selected{% endif %}>Music</option>
-                <option value="Tech" {% if category == 'Tech' %}selected{% endif %}>Tech</option>
+                <option value="Technology" {% if category == 'Technology' %}selected{% endif %}>Technology</option>
                 <option value="Food" {% if category == 'Food' %}selected{% endif %}>Food</option>
                 <option value="Art" {% if category == 'Art' %}selected{% endif %}>Art</option>
             </select>
-            <button type="submit" class="btn btn-primary">Filter</button>
+            <button type="submit" class="btn btn-primary" style="border-radius: 2rem; padding: 0.75rem 2rem;">Explore</button>
         </form>
     </div>
 

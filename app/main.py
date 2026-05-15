@@ -57,13 +57,14 @@ app.include_router(api_router)
 # --------------------------------------------------------------------------- #
 # Web routes  (import here to avoid circular imports)
 # --------------------------------------------------------------------------- #
-from app.web import auth_views, dashboard_views, event_views, home_views, profile_views  # noqa: E402
+from app.web import admin_views, auth_views, dashboard_views, event_views, home_views, profile_views  # noqa: E402
 
 app.include_router(home_views.router)
 app.include_router(auth_views.router)
 app.include_router(event_views.router)
 app.include_router(dashboard_views.router)
 app.include_router(profile_views.router)
+app.include_router(admin_views.router)
 
 
 # --------------------------------------------------------------------------- #

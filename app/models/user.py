@@ -9,6 +9,7 @@ from app.db.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.event import Event
     from app.models.registration import Registration
+    from app.models.comment import Comment
 
 
 class UserRole(str, enum.Enum):
@@ -41,6 +42,9 @@ class User(Base, TimestampMixin):
     )
     registrations: Mapped[list["Registration"]] = relationship(
         "Registration", back_populates="user", lazy="selectin"
+    )
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment", back_populates="user", lazy="selectin"
     )
 
     def __repr__(self) -> str:

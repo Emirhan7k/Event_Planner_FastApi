@@ -9,6 +9,7 @@ from app.db.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.registration import Registration
+    from app.models.comment import Comment
 
 
 class Event(Base, TimestampMixin):
@@ -35,6 +36,9 @@ class Event(Base, TimestampMixin):
     owner: Mapped["User"] = relationship("User", back_populates="events")
     registrations: Mapped[list["Registration"]] = relationship(
         "Registration", back_populates="event", lazy="selectin"
+    )
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment", back_populates="event", lazy="selectin", cascade="all, delete-orphan"
     )
 
     @property

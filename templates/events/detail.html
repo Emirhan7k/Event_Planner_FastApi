@@ -25,6 +25,36 @@
                     {% endfor %}
                 </div>
             </div>
+
+            <!-- Comment Section -->
+            <div id="comments-section" class="mt-12">
+                <div class="glass-card" style="padding: 2rem; margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Share your thoughts</h3>
+                    {% if current_user %}
+                    <form hx-post="/events/{{ event.id }}/comments" hx-target="#comments-container" hx-swap="outerHTML" class="space-y-4">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <span class="text-white/70">Rating:</span>
+                            <div class="rating flex space-x-1">
+                                {% for i in range(5, 0, -1) %}
+                                <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" class="hidden peer" {{ 'checked' if i == 5 }}>
+                                <label for="star{{ i }}" class="cursor-pointer text-white/20 peer-checked:text-yellow-400 hover:text-yellow-400 transition-colors text-2xl">★</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <textarea name="content" placeholder="What do you think about this event?" 
+                                  class="w-100 p-4 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                  rows="4" required></textarea>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </form>
+                    {% else %}
+                    <p class="text-white/50 italic"><a href="/auth/login" class="text-indigo-400 hover:underline">Login</a> to leave a comment.</p>
+                    {% endif %}
+                </div>
+
+                <div id="comments-container">
+                    {% include "partials/comment_list.html" %}
+                </div>
+            </div>
         </div>
 
         <div style="position: sticky; top: 8rem; height: fit-content;">

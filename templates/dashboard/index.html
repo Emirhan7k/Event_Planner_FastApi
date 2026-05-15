@@ -61,6 +61,23 @@
                     </div>
                 </div>
 
+                {% if current_user.role.value == 'admin' %}
+                <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem; border-color: var(--primary);">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Admin Tools</h3>
+                    <div id="scraper-status"></div>
+                    <button hx-post="/admin/scrape" 
+                            hx-target="#scraper-status"
+                            hx-swap="innerHTML"
+                            hx-indicator="#scraper-loader"
+                            class="btn btn-primary" style="width: 100%;">
+                        Run Web Scraper
+                    </button>
+                    <div id="scraper-loader" class="htmx-indicator mt-2 text-center text-sm text-white/50">
+                        Scraping external events... please wait...
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="glass-card" style="padding: 2rem;">
                     <h3 style="margin-bottom: 1.5rem;">Events I'm Organizing</h3>
                     {% for event in my_events %}
