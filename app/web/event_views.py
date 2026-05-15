@@ -108,6 +108,7 @@ async def create_event_submit(
     capacity: int = Form(...),
     category: str = Form(...),
     tags: str = Form(""),
+    image_url: str | None = Form(None),
     session: AsyncSession = Depends(get_db),
     current_user=Depends(require_login_cookie),
 ):
@@ -140,6 +141,7 @@ async def create_event_submit(
                 capacity=capacity,
                 category=category,
                 tags=tag_list,
+                image_url=image_url if image_url and image_url.strip() else None,
             ),
             current_user,
         )

@@ -31,8 +31,8 @@ async def require_login_cookie(
     """Use in web routes that require authentication — redirects to login if not set."""
     if not user:
         from fastapi import HTTPException
-        from fastapi.responses import RedirectResponse
-        raise HTTPException(status_code=307, headers={"Location": "/login"})
+        # Redirect to the correct auth login path
+        raise HTTPException(status_code=307, headers={"Location": "/auth/login"})
     return user
 
 

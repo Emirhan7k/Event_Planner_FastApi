@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
@@ -32,3 +32,14 @@ class UserRepository(BaseRepository[User]):
             select(User).where(User.is_active == True)
         )
         return list(result.scalars().all())
+
+    async def get_paginated(
+        self, *, skip: int = 0, limit: int = 10
+    ) -> tuple[list[User], int]:
+        query = select(User)
+        count_query = select(func.count()).select_from(User)
+        
+        result = await self.session.execute(query.offset(skip).limit(limit))
+        count_result = await self.session.execute(count_query)
+        
+        return list(result.scalars().all()), count_result.scalar_one()

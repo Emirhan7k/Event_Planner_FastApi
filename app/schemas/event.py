@@ -18,6 +18,7 @@ class EventCreate(BaseModel):
     category: str
     tags: list[str] = []
     source_url: str | None = None
+    image_url: str | None = None
 
     @field_validator("title")
     @classmethod

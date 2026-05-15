@@ -68,7 +68,7 @@ async def register_submit(
         # Convert comma separated string to list
         interest_list = [i.strip() for i in interests.split(",") if i.strip()]
         
-        await service.register(
+        tokens = await service.register(
             RegisterRequest(
                 email=email, 
                 username=username, 
@@ -77,7 +77,16 @@ async def register_submit(
                 interests=interest_list
             )
         )
-        return RedirectResponse(url="/auth/login?registered=1", status_code=302)
+        # Auto-login after registration
+        response = RedirectResponse(url="/dashboard", status_code=303)
+        response.set_cookie(
+            key="access_token",
+            value=tokens.access_token,
+            httponly=True,
+            max_age=3600, # 1 hour
+            samesite="lax",
+        )
+        return response
     except (AppError, Exception) as e:
         # Handle both our AppErrors and Pydantic ValidationErrors
         error_msg = str(e)

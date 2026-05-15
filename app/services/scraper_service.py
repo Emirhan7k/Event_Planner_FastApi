@@ -26,6 +26,7 @@ class ScraperService:
         """Finds an admin or fallback user to own scraped events."""
         admin = await self.user_repo.get_by_email("admin@example.com")
         if not admin:
+            # Fallback to any user
             users, _ = await self.user_repo.get_paginated(limit=1)
             if not users:
                 logger.error("No users found in DB. Cannot own scraped events.")
@@ -67,13 +68,14 @@ class ScraperService:
                 
                 new_event = EventCreate(
                     title=title,
-                    description=f"Automated event from YCombinator Show HN: {link}",
-                    location="Online / Tech Hub",
+                    description=f"New tech startup or tool showcase from YCombinator. Learn more about {title} at the source.",
+                    location="Online / Global",
                     event_date=datetime.now() + timedelta(days=7),
                     capacity=100,
                     category="tech",
-                    tags=["tech", "startup", "showcase"],
-                    source_url=link
+                    tags=["tech", "startup", "innovation", "software"],
+                    source_url=link,
+                    image_url="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800"
                 )
                 
                 await event_service.create_event(new_event, admin)
@@ -87,21 +89,20 @@ class ScraperService:
             raise
 
     async def scrape_culture_events(self) -> int:
-        """Scrapes culture events from TimeOut Istanbul."""
-        url = "https://www.timeout.com/istanbul/en/things-to-do"
+        """Scrapes real Istanbul events/activities from istanbul.com."""
+        url = "https://istanbul.com/things-to-do"
         
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             }
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
             
-            items = soup.select("article")[:10]
+            # Use the selectors found by the browser subagent
+            items = soup.select("a.item-card")[:15]
             admin = await self._get_admin()
             if not admin:
                 return 0
@@ -109,32 +110,43 @@ class ScraperService:
             count = 0
             event_service = EventService(self.session)
             for item in items:
-                title_elem = item.select_one("h3")
+                title_elem = item.select_one("h5")
                 if not title_elem:
                     continue
                 
                 title = title_elem.get_text().strip()
-                link_elem = item.select_one("a")
-                link = ""
-                if link_elem:
-                    link = link_elem.get("href", "")
-                    if link and not link.startswith("http"):
-                        link = "https://www.timeout.com" + link
+                link = item.get("href", "")
+                if link and not link.startswith("http"):
+                    # Handle both relative and protocol-relative links
+                    if link.startswith("//"):
+                        link = "https:" + link
+                    else:
+                        link = "https://istanbul.com" + link
                 
                 # Check if event already exists
                 existing, _ = await self.event_repo.get_paginated(search=title, limit=1)
                 if existing:
                     continue
                 
+                # Image extraction
+                image_url = None
+                img_elem = item.select_one("img")
+                if img_elem:
+                    image_url = img_elem.get("src") or img_elem.get("data-src") or img_elem.get("data-lazy-src")
+                
+                # Randomize date for variety
+                event_date = datetime.now() + timedelta(days=5 + count)
+                
                 new_event = EventCreate(
                     title=title,
-                    description=f"Cultural event via TimeOut Istanbul: {title}. More info at source: {link}",
-                    location="Istanbul / Cultural Center",
-                    event_date=datetime.now() + timedelta(days=14),
-                    capacity=200,
-                    category="art",
-                    tags=["culture", "art", "istanbul", "featured"],
-                    source_url=link
+                    description=f"Discover this amazing activity in Istanbul: {title}. Experience the best of the city with real-time updates and booking options.",
+                    location="Istanbul, Turkey",
+                    event_date=event_date,
+                    capacity=150,
+                    category="travel",
+                    tags=["istanbul", "culture", "activity", "featured", "tourism"],
+                    source_url=link,
+                    image_url=image_url or "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&q=80&w=800"
                 )
                 
                 await event_service.create_event(new_event, admin)
@@ -144,5 +156,5 @@ class ScraperService:
             return count
             
         except Exception as e:
-            logger.error(f"Culture scraping failed: {str(e)}")
+            logger.error(f"Istanbul events scraping failed: {str(e)}")
             raise
