@@ -1,8 +1,11 @@
 """Event web views: list, detail, create."""
 
+from datetime import datetime
+import logging
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.event import EventCreate
 
 from app.core.templates import templates
 
@@ -75,3 +78,61 @@ async def event_detail(
         name="events/detail.html",
         context={"current_user": current_user, "event": event},
     )
+
+
+logger = logging.getLogger(__name__)
+
+@router.post("/create")
+async def create_event_submit(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(...),
+    location: str = Form(...),
+    event_date: str = Form(...),
+    capacity: int = Form(...),
+    category: str = Form(...),
+    tags: str = Form(""),
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(require_login_cookie),
+):
+    try:
+        service = EventService(session)
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        
+        # Handle different datetime formats from HTML input
+        dt = None
+        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                dt = datetime.strptime(event_date, fmt)
+                break
+            except ValueError:
+                continue
+        
+        if dt is None:
+            try:
+                dt = datetime.fromisoformat(event_date.replace("Z", "+00:00"))
+            except ValueError:
+                raise ValueError(f"Invalid date format: {event_date}. Expected YYYY-MM-DDTHH:MM")
+
+
+        await service.create_event(
+            EventCreate(
+                title=title,
+                description=description,
+                location=location,
+                event_date=dt,
+                capacity=capacity,
+                category=category,
+                tags=tag_list,
+            ),
+            current_user,
+        )
+        return RedirectResponse(url="/events", status_code=303)
+    except Exception as e:
+        logger.error(f"Event creation error: {str(e)}")
+        return templates.TemplateResponse(
+            request=request,
+            name="events/create.html",
+            context={"current_user": current_user, "error": f"Error: {str(e)}"},
+            status_code=400,
+        )

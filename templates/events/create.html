@@ -5,7 +5,13 @@
     <div class="auth-form glass-card" style="max-width: 600px;">
         <h2 style="margin-bottom: 2rem; text-align: center;">Create New Event</h2>
         
-        <form hx-post="/api/v1/events" hx-target="body" hx-encoding="multipart/form-data">
+        {% if error %}
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); color: var(--error); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="/events/create" method="POST">
             <div class="form-group">
                 <label for="title">Event Title</label>
                 <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Summer Jazz Festival" required>
