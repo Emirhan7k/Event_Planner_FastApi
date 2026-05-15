@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section style="padding: 8rem 2rem 4rem;">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+            <div>
+                <h1 style="font-size: 2.5rem;">Welcome back, {{ current_user.username }}!</h1>
+                <p style="color: var(--text-muted);">Here's what's happening in your event world.</p>
+            </div>
+            <a href="/events/create" class="btn btn-primary">+ Create Event</a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
+            <div>
+                <h2 style="margin-bottom: 2rem;">Recommended Just For You</h2>
+                <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 0; width: 100%;">
+                    {% for event in recommendations %}
+                        {% include "partials/event_card.html" %}
+                    {% else %}
+                        <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem; text-align: center; color: var(--text-muted);">
+                            Tell us more about your interests in your profile to get personalized suggestions!
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <h2 style="margin: 4rem 0 2rem;">My Registered Events</h2>
+                <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 0; width: 100%;">
+                    {% for reg in registrations %}
+                        <div class="event-card glass-card">
+                            <img src="{{ reg.event_image_url or 'https://via.placeholder.com/400x200' }}" class="event-image">
+                            <div class="event-details">
+                                <span class="event-category">{{ reg.event_category }}</span>
+                                <h3 class="event-title">{{ reg.event_title }}</h3>
+                                <div class="event-info">
+                                    <span>{{ reg.event_date.strftime('%B %d, %Y') }}</span>
+                                </div>
+                                <a href="/events/{{ reg.event_id }}" class="btn btn-outline" style="width: 100%; text-align: center;">View Details</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem; text-align: center; color: var(--text-muted);">
+                            You haven't joined any events yet. <a href="/events" style="color: var(--primary);">Go explore!</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <aside>
+                <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Quick Stats</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 1rem;">
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">{{ registrations|length }}</div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Joined</div>
+                        </div>
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 1rem;">
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--secondary);">{{ my_events|length }}</div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Created</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Events I'm Organizing</h3>
+                    {% for event in my_events %}
+                        <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600;">{{ event.title }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ event.registered_count }} joined</div>
+                            </div>
+                            <a href="/events/{{ event.id }}" style="color: var(--primary); font-size: 0.875rem;">Manage</a>
+                        </div>
+                    {% else %}
+                        <p style="color: var(--text-muted); font-size: 0.875rem;">You haven't created any events yet.</p>
+                    {% endfor %}
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

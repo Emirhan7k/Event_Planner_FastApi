@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section style="padding-top: 8rem;">
+    <div class="section-title">
+        <h2>Explore Events</h2>
+        <form action="/events" method="GET" style="max-width: 600px; margin: 2rem auto; display: flex; gap: 1rem;">
+            <input type="text" name="search" class="form-control" placeholder="Search events..." value="{{ search or '' }}">
+            <select name="category" class="form-control" style="width: 200px;">
+                <option value="">All Categories</option>
+                <option value="Music" {% if category == 'Music' %}selected{% endif %}>Music</option>
+                <option value="Tech" {% if category == 'Tech' %}selected{% endif %}>Tech</option>
+                <option value="Food" {% if category == 'Food' %}selected{% endif %}>Food</option>
+                <option value="Art" {% if category == 'Art' %}selected{% endif %}>Art</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <div class="event-grid">
+        {% for event in events %}
+            {% include "partials/event_card.html" %}
+        {% else %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-muted);">
+                No events found.
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 4rem; padding-bottom: 4rem;">
+        {% if page > 1 %}
+            <a href="/events?page={{ page - 1 }}&search={{ search or '' }}&category={{ category or '' }}" class="btn btn-outline">Previous</a>
+        {% endif %}
+        <span style="align-self: center; color: var(--text-muted);">Page {{ page }} of {{ pages }}</span>
+        {% if page < pages %}
+            <a href="/events?page={{ page + 1 }}&search={{ search or '' }}&category={{ category or '' }}" class="btn btn-outline">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

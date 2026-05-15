@@ -1,31 +1,56 @@
-# AI Event Planner
+# Smart Event Planner 🧠
 
-AI Event Planner, kullanıcının ilgi alanları, geçmiş katılımları ve takvim uygunluğuna göre etkinlik öneren tam yığın bir web uygulaması iskeletidir.
+AI-powered event planning platform with content-based recommendation engine.
 
-## Yapı
+## Tech Stack
+- **Backend**: FastAPI (async) + SQLAlchemy 2.x + SQLite (aiosqlite)
+- **AI/ML**: scikit-learn TF-IDF + Cosine Similarity
+- **Auth**: JWT (access + refresh tokens, HttpOnly cookies)
+- **Frontend**: Jinja2 + Vanilla CSS (responsive, dark mode)
+- **Migrations**: Alembic (async)
+- **Package Manager**: uv
 
-- `backend/`: FastAPI, SQLAlchemy, öneri servisleri, WebSocket bildirimleri ve testler.
-- `frontend/`: Next.js App Router, TypeScript, Tailwind CSS ve AI odaklı etkinlik arayüzü.
-- `docs/`: API, mimari ve öneri sistemi notları.
-
-## Hızlı Başlangıç
-
-Backend:
-
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-Frontend:
+## Quick Start
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# Install dependencies
+uv sync
+
+# Setup database
+mkdir data
+uv run alembic upgrade head
+
+# Run server
+uv run uvicorn app.main:app --reload
+
+# Run tests
+uv run pytest tests/ -v
 ```
 
-Varsayılan frontend adresi `http://localhost:3000`, backend adresi `http://localhost:8000`.
+## Project Structure
+
+```
+app/
+├── core/          # Config, JWT security, exceptions
+├── db/            # Async engine, session
+├── models/        # SQLAlchemy ORM models
+├── schemas/       # Pydantic v2 schemas
+├── repositories/  # CRUD data access layer
+├── services/      # Business logic + AI recommendation
+├── api/v1/        # REST API endpoints
+├── web/           # Jinja2 page routes
+├── middleware/    # Logging middleware
+└── templates/     # HTML templates
+alembic/           # Database migrations
+tests/             # pytest test suite
+static/            # CSS, JS, uploads
+```
+
+## Features
+- 🔐 JWT Authentication (register/login/refresh)
+- 📅 Event CRUD with image upload
+- 🤖 AI Recommendations (TF-IDF + Cosine Similarity)
+- 📊 User dashboard with registered events
+- 🎯 Interest-based user profiles
+- 🔍 Event search & category filtering
+- 📱 Fully responsive UI

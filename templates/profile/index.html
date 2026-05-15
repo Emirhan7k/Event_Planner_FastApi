@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section style="padding: 8rem 2rem 4rem;">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 4rem;">
+            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 800; border: 4px solid var(--glass-border);">
+                {{ current_user.username[0].upper() }}
+            </div>
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">{{ current_user.full_name }}</h1>
+                <p style="color: var(--text-muted);">@{{ current_user.username }} • Joined {{ current_user.created_at.strftime('%B %Y') }}</p>
+            </div>
+        </div>
+
+        {% if updated %}
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+                Profile updated successfully!
+            </div>
+        {% endif %}
+
+        <div class="glass-card" style="padding: 3rem;">
+            <h2 style="margin-bottom: 2rem;">Profile Settings</h2>
+            <form action="/profile/update" method="POST">
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" class="form-control" value="{{ current_user.full_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" name="bio" class="form-control" rows="4" placeholder="Tell us about yourself...">{{ current_user.bio or '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Interests</label>
+                    <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tags that help us recommend events:</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            {% for interest in current_user.interests %}
+                                <span style="background: var(--primary); padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.875rem;">{{ interest }}</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.875rem;">No interests added yet.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

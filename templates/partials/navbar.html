@@ -1,0 +1,16 @@
+<nav>
+    <div class="nav-container">
+        <a href="/" class="logo">EventMind</a>
+        <div class="nav-links">
+            <a href="/events">Explore</a>
+            {% if current_user %}
+                <a href="/dashboard">Dashboard</a>
+                <a href="/profile">Profile</a>
+                <a href="/auth/logout" class="btn btn-outline">Logout</a>
+            {% else %}
+                <a href="/auth/login">Login</a>
+                <a href="/auth/register" class="btn btn-primary">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content fade-in">
+        <h1>Discover Events That <span style="color: var(--primary);">Matter</span></h1>
+        <p>Smart Event Planner uses AI to match your interests with the best upcoming events in your city.</p>
+        <div class="hero-btns">
+            <a href="/events" class="btn btn-primary">Explore Events</a>
+            {% if not current_user %}
+                <a href="/auth/register" class="btn btn-outline" style="margin-left: 1rem;">Get Started</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% if recommended_events %}
+<section class="recommendations">
+    <div class="section-title">
+        <h2>Recommended For You</h2>
+        <p style="color: var(--text-muted);">Based on your interests and past attendance</p>
+    </div>
+    <div class="event-grid">
+        {% for event in recommended_events %}
+            {% include "partials/event_card.html" %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="featured">
+    <div class="section-title">
+        <h2>Upcoming Events</h2>
+        <p style="color: var(--text-muted);">Check out what's happening soon</p>
+    </div>
+    <div class="event-grid">
+        {% for event in featured_events %}
+            {% include "partials/event_card.html" %}
+        {% endfor %}
+    </div>
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="/events" class="btn btn-outline">See All Events</a>
+    </div>
+</section>
+{% endblock %}
