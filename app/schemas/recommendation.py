@@ -22,6 +22,7 @@ class RecommendedEvent(BaseModel):
     is_favorited: bool = False
     score: float  # cosine similarity 0.0–1.0
     score_percent: int  # score * 100 rounded
+    recommendation_reason: str | None = None
 
 
 class RecommendationResult(BaseModel):

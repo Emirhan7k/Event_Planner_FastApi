@@ -5,6 +5,8 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
+from app.models.user import User
+from app.models.registration import Registration
 from app.repositories.base import BaseRepository
 
 
@@ -16,7 +18,10 @@ class EventRepository(BaseRepository[Event]):
         result = await self.session.execute(
             select(Event)
             .where(Event.id == id, Event.is_active == True)
-            .options(selectinload(Event.owner))
+            .options(
+                selectinload(Event.owner).selectinload(User.events),
+                selectinload(Event.registrations).selectinload(Registration.user)
+            )
         )
         return result.scalar_one_or_none()
 

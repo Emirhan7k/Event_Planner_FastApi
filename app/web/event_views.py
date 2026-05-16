@@ -13,6 +13,7 @@ from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.services.event_service import EventService
 from app.services.comment_service import CommentService
+from app.services.registration_service import RegistrationService
 from app.services.favorite_service import FavoriteService
 from app.web.deps import get_current_user_from_cookie, require_login_cookie
 
@@ -64,7 +65,6 @@ async def event_create_page(
         request=request, name="events/create.html", context={"current_user": current_user}
     )
 
-
 @router.get("/{event_id}", response_class=HTMLResponse)
 async def event_detail(
     request: Request,
@@ -88,6 +88,10 @@ async def event_detail(
         fav_service = FavoriteService(session)
         is_fav = await fav_service.is_favorited(current_user.id, event_id)
         setattr(event, "is_favorited", is_fav)
+        
+        reg_service = RegistrationService(session)
+        is_reg = await reg_service.is_registered(current_user.id, event_id)
+        setattr(event, "is_registered", is_reg)
 
     return templates.TemplateResponse(
         request=request,

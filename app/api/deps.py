@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,13 +13,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=F
 
 async def get_current_user(
     token: str | None = Depends(oauth2_scheme),
+    access_token: str | None = Cookie(default=None),
     session: AsyncSession = Depends(get_db),
 ) -> User:
-    if not token:
+    # Use cookie if token is missing (useful for HTMX from web pages)
+    auth_token = token or access_token
+    
+    if not auth_token:
         raise AuthError("Not authenticated.")
-    user_id = decode_access_token(token)
+    
+    user_id = decode_access_token(auth_token)
     if not user_id:
         raise AuthError("Invalid or expired token.")
+        
     repo = UserRepository(session)
     user = await repo.get(int(user_id))
     if not user or not user.is_active:

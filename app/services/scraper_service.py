@@ -88,8 +88,27 @@ class ScraperService:
             logger.error(f"Tech scraping failed: {str(e)}")
             raise
 
-    async def scrape_culture_events(self) -> int:
-        """Scrapes real Istanbul events/activities from istanbul.com."""
+    def _detect_category(self, title: str, category_label: str) -> str:
+        """Detect best matching category from title and site label."""
+        text = f"{title} {category_label}".lower()
+        
+        if any(k in text for k in ["concert", "music", "live", "performance", "show", "whirling", "nightlife", "jazz", "opera"]):
+            return "music"
+        if any(k in text for k in ["art", "museum", "exhibition", "gallery", "culture", "history", "landmark"]):
+            return "art"
+        if any(k in text for k in ["food", "taste", "dinner", "culinary", "restaurant", "drink", "wine", "coffee"]):
+            return "food"
+        if any(k in text for k in ["sport", "match", "game", "race", "run", "stadium", "football", "basketball"]):
+            return "sports"
+        if any(k in text for k in ["tech", "startup", "innovation", "software", "ai", "coding", "web"]):
+            return "tech"
+        if any(k in text for k in ["business", "workshop", "masterclass", "learning", "education", "summit", "conference"]):
+            return "business"
+            
+        return "other"
+
+    async def scrape_istanbul_events(self) -> int:
+        """Scrapes diverse Istanbul events from istanbul.com/things-to-do."""
         url = "https://istanbul.com/things-to-do"
         
         try:
@@ -101,8 +120,7 @@ class ScraperService:
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
             
-            # Use the selectors found by the browser subagent
-            items = soup.select("a.item-card")[:15]
+            items = soup.select("a.item-card")[:30] # Get more items
             admin = await self._get_admin()
             if not admin:
                 return 0
@@ -115,9 +133,18 @@ class ScraperService:
                     continue
                 
                 title = title_elem.get_text().strip()
+                
+                # Check if it's an event or just a tour/pass
+                category_label = ""
+                cat_elem = item.select_one("p")
+                if cat_elem:
+                    category_label = cat_elem.get_text().strip()
+                
+                # Assign category
+                category = self._detect_category(title, category_label)
+                
                 link = item.get("href", "")
                 if link and not link.startswith("http"):
-                    # Handle both relative and protocol-relative links
                     if link.startswith("//"):
                         link = "https:" + link
                     else:
@@ -137,14 +164,19 @@ class ScraperService:
                 # Randomize date for variety
                 event_date = datetime.now() + timedelta(days=5 + count)
                 
+                # Generate tags based on title/category
+                tags = [category, "istanbul", "featured"]
+                if "concert" in title.lower(): tags.append("live")
+                if "museum" in title.lower(): tags.append("museum")
+
                 new_event = EventCreate(
                     title=title,
-                    description=f"Discover this amazing activity in Istanbul: {title}. Experience the best of the city with real-time updates and booking options.",
+                    description=f"Experience the vibrant life of Istanbul with: {title}. This {category} event offers a unique glimpse into the city's rich culture and modern activities.",
                     location="Istanbul, Turkey",
                     event_date=event_date,
                     capacity=150,
-                    category="travel",
-                    tags=["istanbul", "culture", "activity", "featured", "tourism"],
+                    category=category,
+                    tags=tags,
                     source_url=link,
                     image_url=image_url or "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&q=80&w=800"
                 )
@@ -158,3 +190,13 @@ class ScraperService:
         except Exception as e:
             logger.error(f"Istanbul events scraping failed: {str(e)}")
             raise
+
+    async def scrape_all(self) -> dict[str, int]:
+        """Runs all scraping tasks."""
+        tech_count = await self.scrape_tech_events()
+        istanbul_count = await self.scrape_istanbul_events()
+        return {
+            "tech": tech_count,
+            "istanbul": istanbul_count,
+            "total": tech_count + istanbul_count
+        }

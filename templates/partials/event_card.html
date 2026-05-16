@@ -24,6 +24,11 @@
                 {{ event.title }}
             </a>
         </h3>
+        {% if event.recommendation_reason %}
+            <div class="reason-badge">
+                <i class="fas fa-magic"></i> {{ event.recommendation_reason }}
+            </div>
+        {% endif %}
         <div class="event-info">
             <span>{{ event.event_date.strftime('%B %d, %Y') }}</span> • 
             <span>{{ event.location }}</span>

@@ -16,6 +16,8 @@ from app.web.deps import require_login_cookie
 router = APIRouter(prefix="/profile", tags=["web-profile"])
 
 
+from app.services.registration_service import RegistrationService
+
 @router.get("", response_class=HTMLResponse)
 async def profile_page(
     request: Request,
@@ -24,8 +26,11 @@ async def profile_page(
 ):
     service = UserService(session)
     fav_service = FavoriteService(session)
+    reg_service = RegistrationService(session)
+    
     stats = await service.get_user_stats(current_user.id)
     saved_events = await fav_service.get_user_favorites(current_user.id)
+    registered_events = await reg_service.get_my_registrations(current_user)
     
     # Mark as favorited for template logic
     for event in saved_events:
@@ -37,7 +42,8 @@ async def profile_page(
         context={
             "current_user": current_user, 
             "stats": stats,
-            "saved_events": saved_events
+            "saved_events": saved_events,
+            "registered_events": registered_events
         },
     )
 
@@ -47,13 +53,23 @@ async def profile_update(
     request: Request,
     full_name: str = Form(...),
     bio: str = Form(""),
+    interests: str = Form(""),
     current_user=Depends(require_login_cookie),
     session: AsyncSession = Depends(get_db),
 ):
     try:
         service = UserService(session)
+        
+        # Process interests string into a list
+        interest_list = [i.strip().lower() for i in interests.split(",") if i.strip()]
+        
         await service.update_profile(
-            current_user.id, UserUpdate(full_name=full_name, bio=bio or None)
+            current_user.id, 
+            UserUpdate(
+                full_name=full_name, 
+                bio=bio or None,
+                interests=interest_list
+            )
         )
         return RedirectResponse(url="/profile?updated=1", status_code=302)
     except AppError as e:

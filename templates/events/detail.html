@@ -28,6 +28,26 @@
 
             <!-- Comment Section -->
             <div id="comments-section" class="mt-12">
+                {% if current_user and current_user.id == event.owner_id %}
+                <div class="glass-card" style="padding: 2rem; margin-top: 2rem; margin-bottom: 2rem; border-color: var(--primary);">
+                    <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-users"></i> Confirmed Attendees ({{ event.registered_count }})</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                        {% for reg in event.registrations %}
+                            {% if reg.status == 'confirmed' %}
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--surface-light); padding: 0.5rem; border-radius: 0.5rem;">
+                                <div style="width: 24px; height: 24px; background: var(--secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800;">
+                                    {{ reg.user.username[0].upper() }}
+                                </div>
+                                <span style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ reg.user.full_name }}</span>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <p style="color: var(--text-muted); font-style: italic;">No attendees yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="glass-card" style="padding: 2rem; margin-top: 2rem;">
                     <h3 style="margin-bottom: 1.5rem;">Share your thoughts</h3>
                     {% if current_user %}
@@ -67,25 +87,20 @@
                 </div>
 
                 {% if current_user %}
-                    {% set is_registered = false %}
-                    {% for reg in current_user.registrations %}
-                        {% if reg.event_id == event.id and reg.status == 'confirmed' %}
-                            {% set is_registered = true %}
-                        {% endif %}
-                    {% endfor %}
+                    {% set is_registered = event.is_registered %}
 
                     {% if is_registered %}
                         <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                            You're registered!
+                            <i class="fas fa-check-circle"></i> You're registered!
                         </div>
-                        <button hx-post="/api/v1/registrations/events/{{ event.id }}/cancel" 
-                                hx-confirm="Are you sure you want to cancel?"
+                        <button hx-delete="/api/v1/registrations/{{ event.id }}" 
+                                hx-confirm="Are you sure you want to cancel your registration?"
                                 hx-target="body"
                                 class="btn btn-outline" style="width: 100%;">Cancel Registration</button>
                     {% elif event.is_full %}
                         <button class="btn btn-outline" style="width: 100%; cursor: not-allowed;" disabled>Event Full</button>
                     {% else %}
-                        <button hx-post="/api/v1/registrations/events/{{ event.id }}" 
+                        <button hx-post="/api/v1/registrations/{{ event.id }}" 
                                 hx-target="body"
                                 class="btn btn-primary" style="width: 100%;">Register Now</button>
                     {% endif %}
@@ -103,15 +118,19 @@
 
             <div class="glass-card" style="padding: 2rem; margin-top: 2rem;">
                 <h4 style="margin-bottom: 1rem;">Event Organizer</h4>
+                {% if event.owner %}
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div style="width: 48px; height: 48px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;">
-                        {{ event.owner.username[0].upper() }}
+                        {{ event.owner.username[0].upper() if event.owner.username else '?' }}
                     </div>
                     <div>
-                        <div style="font-weight: 600;">{{ event.owner.full_name }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Organized {{ event.owner.events|length }} events</div>
+                        <div style="font-weight: 600;">{{ event.owner.full_name or 'Organizer' }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Organized {{ event.owner.events|length if event.owner.events else 0 }} events</div>
                     </div>
                 </div>
+                {% else %}
+                <p style="color: var(--text-muted);">Organizer info unavailable.</p>
+                {% endif %}
             </div>
         </div>
     </div>

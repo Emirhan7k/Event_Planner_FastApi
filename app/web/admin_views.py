@@ -16,9 +16,9 @@ async def trigger_scrape(
     admin=Depends(require_admin),
 ):
     scraper = ScraperService(session)
-    count = await scraper.scrape_tech_events()
+    results = await scraper.scrape_all()
     
     # Return a snippet or a message (HTMX friendly)
     return HTMLResponse(
-        content=f'<div class="alert alert-success">Successfully scraped {count} new events!</div>'
+        content=f'<div style="color: var(--success); margin-top: 1rem;">Successfully scraped {results["total"]} new events (Tech: {results["tech"]}, Istanbul: {results["istanbul"]})!</div>'
     )

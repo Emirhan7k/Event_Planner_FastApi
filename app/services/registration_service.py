@@ -48,6 +48,9 @@ class RegistrationService:
         self.session.add(reg)
         await self.session.commit()
 
+    async def is_registered(self, user_id: int, event_id: int) -> bool:
+        return await self.reg_repo.is_registered(user_id, event_id)
+
     async def get_my_registrations(self, current_user: User) -> list[RegistrationWithEvent]:
         regs = await self.reg_repo.get_user_registrations(
             current_user.id, status=RegistrationStatus.CONFIRMED

@@ -16,13 +16,12 @@ class CommentService:
         self.repo = CommentRepository(session)
 
     async def add_comment(self, user: User, event_id: int, content: str, rating: int) -> Comment:
-        comment = Comment(
-            user_id=user.id,
-            event_id=event_id,
-            content=content,
-            rating=rating
-        )
-        return await self.repo.create(comment)
+        return await self.repo.create({
+            "user_id": user.id,
+            "event_id": event_id,
+            "content": content,
+            "rating": rating
+        })
 
     async def get_event_comments(self, event_id: int) -> list[Comment]:
         result = await self.session.execute(
@@ -36,6 +35,6 @@ class CommentService:
     async def delete_comment(self, comment_id: int, user_id: int) -> bool:
         comment = await self.repo.get(comment_id)
         if comment and (comment.user_id == user_id):
-            await self.repo.delete(comment_id)
+            await self.repo.delete(comment)
             return True
         return False

@@ -56,125 +56,112 @@ class RecommendationEngine:
     def _event_to_text(self, event: Event) -> str:
         """Convert an event to a single TF-IDF document string."""
         tags_text = " ".join(event.tags) if event.tags else ""
-        desc_snippet = (event.description or "")[:500] # Use more description
-        # Boost title and category by repeating them
-        return f"{event.title} {event.title} {event.category} {event.category} {tags_text} {desc_snippet}".lower().strip()
+        desc_snippet = (event.description or "")[:500]
+        return f"{event.title} {event.category} {tags_text} {desc_snippet}".lower().strip()
 
     def _build_user_profile_text(self, user: User, attended_events: list[Event]) -> str:
-        """
-        Build the user's interest text from:
-          - Explicit interest tags (weighted 4x)
-          - Bio keywords (weighted 2x)
-          - Category + tags of confirmed attended events
-        """
+        """Build the user's interest text for TF-IDF."""
         parts: list[str] = []
-
-        # Explicit interests
         if user.interests:
-            interest_text = " ".join(user.interests)
-            parts.extend([interest_text] * 4)
-
-        # Bio keywords
+            parts.extend(user.interests * 3)  # Explicit interests weight
         if user.bio:
-            parts.extend([user.bio] * 2)
-
-        # Implicit interests from past event attendance
+            parts.append(user.bio)
         for event in attended_events:
             tags_text = " ".join(event.tags) if event.tags else ""
-            # attended events signal category and tags
-            parts.append(f"{event.category} {event.category} {tags_text}")
-
+            parts.append(f"{event.category} {tags_text}")
         return " ".join(parts).lower().strip()
 
-    def _run_tfidf(
-        self, query_text: str, event_texts: list[str]
-    ) -> np.ndarray:
+    def _calculate_hybrid_score(
+        self, 
+        event: Event, 
+        content_score: float, 
+        user_interests: list[str], 
+        attended_categories: dict[str, int]
+    ) -> tuple[float, str]:
         """
-        Run TF-IDF + cosine similarity.
-        Returns similarity scores array of shape (len(event_texts),).
+        Calculate a hybrid score (0.0 - 1.0+) and a reason.
+        Components:
+        1. Content Similarity (TF-IDF): 40%
+        2. Interest Match (Explicit): 30%
+        3. Category Preference: 20%
+        4. Popularity: 10%
         """
+        score = content_score * 0.4
+        reason = "Matched your interests"
+
+        # 1. Interest Match
+        matching_interests = []
+        event_tags = [t.lower() for t in (event.tags or [])]
+        for interest in user_interests:
+            if interest.lower() in event_tags or interest.lower() in event.title.lower():
+                matching_interests.append(interest)
+        
+        if matching_interests:
+            score += 0.3 * (len(matching_interests) / max(len(user_interests), 1))
+            reason = f"Based on your interest in {matching_interests[0]}"
+
+        # 2. Category Match
+        if event.category in attended_categories:
+            score += 0.2
+            if not matching_interests:
+                reason = f"Fits your preference for {event.category} events"
+
+        # 3. Popularity / Filling Up
+        if event.capacity > 0:
+            fill_ratio = event.registered_count / event.capacity
+            if fill_ratio > 0.8:
+                score += 0.1
+                reason = f"Trending now: {reason}" if reason else "Trending in your area"
+            elif fill_ratio > 0.5:
+                score += 0.05
+
+        return min(float(score), 1.0), reason
+
+    def _run_tfidf(self, query_text: str, event_texts: list[str]) -> np.ndarray:
         if not query_text or not event_texts:
             return np.zeros(len(event_texts))
-
         corpus = [query_text] + event_texts
-        vectorizer = TfidfVectorizer(
-            ngram_range=(1, 2),
-            min_df=1,
-            max_features=5000,
-            sublinear_tf=True,
-        )
+        vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_features=5000, sublinear_tf=True)
         try:
             tfidf_matrix = vectorizer.fit_transform(corpus)
-        except ValueError:
-            # All terms filtered → zero scores
+            user_vector = tfidf_matrix[0]
+            event_matrix = tfidf_matrix[1:]
+            return cosine_similarity(user_vector, event_matrix).flatten()
+        except Exception:
             return np.zeros(len(event_texts))
-
-        user_vector = tfidf_matrix[0]        # shape (1, n_features)
-        event_matrix = tfidf_matrix[1:]       # shape (n_events, n_features)
-
-        scores = cosine_similarity(user_vector, event_matrix).flatten()
-        return scores
 
     # ──────────────────────────────────────────────
     # Public API
     # ──────────────────────────────────────────────
 
-    async def get_recommendations(
-        self, user_id: int, top_k: int = 10
-    ) -> RecommendationResult:
-        """
-        Return top-K personalized event recommendations for a user.
-        Excludes events the user already registered for.
-        """
+    async def get_recommendations(self, user_id: int, top_k: int = 10) -> RecommendationResult:
         user = await self.user_repo.get(user_id)
         if not user:
-            return RecommendationResult(
-                user_id=user_id,
-                recommendations=[],
-                based_on_interests=[],
-                total_events_analyzed=0,
-            )
+            return RecommendationResult(user_id=user_id, recommendations=[], based_on_interests=[], total_events_analyzed=0)
 
-        # Events the user already joined (exclude from recommendations)
-        registered_ids = set(
-            await self.reg_repo.get_user_confirmed_event_ids(user_id)
-        )
-
-        # All active upcoming events
+        registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
         all_events = await self.event_repo.get_all_active_for_recommendation()
         candidate_events = [e for e in all_events if e.id not in registered_ids]
 
         if not candidate_events:
-            return RecommendationResult(
-                user_id=user_id,
-                recommendations=[],
-                based_on_interests=user.interests or [],
-                total_events_analyzed=0,
-            )
+            return RecommendationResult(user_id=user_id, recommendations=[], based_on_interests=user.interests or [], total_events_analyzed=0)
 
-        # Build attended-event objects for implicit signal
         attended_events = [e for e in all_events if e.id in registered_ids]
+        attended_categories = {}
+        for e in attended_events:
+            attended_categories[e.category] = attended_categories.get(e.category, 0) + 1
 
-        # Build user profile text
         profile_text = self._build_user_profile_text(user, attended_events)
-
-        logger.debug(
-            "Recommendation profile for user %d: %r (interests=%s, attended=%d)",
-            user_id, profile_text[:100], user.interests, len(attended_events)
-        )
-
-        # Build event corpus
         event_texts = [self._event_to_text(e) for e in candidate_events]
+        content_scores = self._run_tfidf(profile_text, event_texts)
 
-        # Run TF-IDF cosine similarity
-        scores = self._run_tfidf(profile_text, event_texts)
+        hybrid_results = []
+        for event, c_score in zip(candidate_events, content_scores):
+            score, reason = self._calculate_hybrid_score(event, float(c_score), user.interests or [], attended_categories)
+            hybrid_results.append((event, score, reason))
 
-        # Pair events with scores and sort
-        scored = sorted(
-            zip(candidate_events, scores),
-            key=lambda x: x[1],
-            reverse=True,
-        )[:top_k]
+        hybrid_results.sort(key=lambda x: x[1], reverse=True)
+        scored = hybrid_results[:top_k]
 
         recommendations = [
             RecommendedEvent(
@@ -190,10 +177,11 @@ class RecommendationEngine:
                 capacity=event.capacity,
                 registered_count=event.registered_count,
                 is_full=event.is_full,
-                score=round(float(score), 4),
-                score_percent=round(float(score) * 100),
+                score=round(score, 4),
+                score_percent=round(score * 100),
+                recommendation_reason=reason
             )
-            for event, score in scored
+            for event, score, reason in scored
         ]
 
         return RecommendationResult(
@@ -203,68 +191,47 @@ class RecommendationEngine:
             total_events_analyzed=len(candidate_events),
         )
 
-    async def get_similar_events(
-        self, event_id: int, top_k: int = 5
-    ) -> list[SimilarEvent]:
-        """
-        Return events similar to the given event (content-based).
-        Uses the event's own text as the query vector.
-        """
+    async def get_similar_events(self, event_id: int, top_k: int = 5) -> list[SimilarEvent]:
         all_events = await self.event_repo.get_all_active_for_recommendation()
         target_event = next((e for e in all_events if e.id == event_id), None)
-
-        if not target_event:
-            return []
+        if not target_event: return []
 
         other_events = [e for e in all_events if e.id != event_id]
-        if not other_events:
-            return []
+        if not other_events: return []
 
         target_text = self._event_to_text(target_event)
         event_texts = [self._event_to_text(e) for e in other_events]
         scores = self._run_tfidf(target_text, event_texts)
 
-        scored = sorted(
-            zip(other_events, scores),
-            key=lambda x: x[1],
-            reverse=True,
-        )[:top_k]
+        scored = sorted(zip(other_events, scores), key=lambda x: x[1], reverse=True)[:top_k]
 
         return [
             SimilarEvent(
-                id=event.id,
-                title=event.title,
-                category=event.category,
-                tags=event.tags or [],
-                image_url=event.image_url,
-                source_url=event.source_url,
-                event_date=event.event_date,
-                score=round(float(score), 4),
-                score_percent=round(float(score) * 100),
+                id=event.id, title=event.title, category=event.category,
+                tags=event.tags or [], image_url=event.image_url,
+                source_url=event.source_url, event_date=event.event_date,
+                score=round(float(score), 4), score_percent=round(float(score) * 100),
             )
             for event, score in scored
         ]
 
     async def score_event_for_user(self, user_id: int, event_id: int) -> float:
-        """
-        Return the recommendation score (0.0–1.0) for a single event–user pair.
-        """
         user = await self.user_repo.get(user_id)
-        if not user:
-            return 0.0
-
+        if not user: return 0.0
         event = await self.event_repo.get_active(event_id)
-        if not event:
-            return 0.0
+        if not event: return 0.0
 
         registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
         all_events = await self.event_repo.get_all_active_for_recommendation()
         attended_events = [e for e in all_events if e.id in registered_ids]
+        attended_categories = {e.category: 1 for e in attended_events}
 
         profile_text = self._build_user_profile_text(user, attended_events)
         event_text = self._event_to_text(event)
-        scores = self._run_tfidf(profile_text, [event_text])
-        return round(float(scores[0]), 4)
+        c_scores = self._run_tfidf(profile_text, [event_text])
+        
+        score, _ = self._calculate_hybrid_score(event, float(c_scores[0]), user.interests or [], attended_categories)
+        return round(float(score), 4)
 
 
 # ─── Factory function (for dependency injection) ───

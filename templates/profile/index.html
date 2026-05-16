@@ -33,21 +33,49 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Interests</label>
-                    <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tags that help us recommend events:</p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            {% for interest in current_user.interests %}
-                                <span style="background: var(--primary); padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.875rem;">{{ interest }}</span>
-                            {% else %}
-                                <span style="color: var(--text-muted); font-size: 0.875rem;">No interests added yet.</span>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    <label for="interests">Interests (comma separated)</label>
+                    <input type="text" id="interests" name="interests" class="form-control" 
+                           value="{{ current_user.interests | join(', ') }}" 
+                           placeholder="e.g. music, tech, festival, outdoor">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); mt: 0.5rem;">
+                        Tags help us recommend the best events for you.
+                    </p>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Changes</button>
             </form>
+        </div>
+
+        <div style="margin-top: 4rem;">
+            <h2 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-ticket-alt" style="color: var(--primary);"></i> My Registrations
+            </h2>
+            {% if registered_events %}
+                <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 0;">
+                    {% for reg in registered_events %}
+                        <div class="glass-card event-card">
+                            {% if reg.event_image_url %}
+                            <img src="{{ reg.event_image_url }}" alt="{{ reg.event_title }}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 1rem 1rem 0 0;">
+                            {% endif %}
+                            <div style="padding: 1.5rem;">
+                                <div style="font-size: 0.75rem; color: var(--primary); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">{{ reg.event_category }}</div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">
+                                    <a href="/events/{{ reg.event_id }}" style="color: var(--text); text-decoration: none;">{{ reg.event_title }}</a>
+                                </h3>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <span><i class="far fa-calendar"></i> {{ reg.event_date.strftime('%b %d, %Y') }}</span>
+                                    <span><i class="fas fa-map-marker-alt"></i> {{ reg.event_location }}</span>
+                                </div>
+                                <a href="/events/{{ reg.event_id }}" class="btn btn-outline" style="width: 100%; margin-top: 1.5rem; font-size: 0.8rem; padding: 0.5rem;">View Details</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card" style="padding: 3rem; text-align: center;">
+                    <p style="color: var(--text-muted);">You haven't registered for any events yet.</p>
+                </div>
+            {% endif %}
         </div>
 
         <div style="margin-top: 4rem;">
