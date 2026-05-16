@@ -59,16 +59,24 @@ class RecommendationEngine:
         desc_snippet = (event.description or "")[:500]
         return f"{event.title} {event.category} {tags_text} {desc_snippet}".lower().strip()
 
-    def _build_user_profile_text(self, user: User, attended_events: list[Event]) -> str:
-        """Build the user's interest text for TF-IDF."""
+    def _build_user_profile_text(self, user: User, reference_events: list[Event]) -> str:
+        """Build the user's interest text for TF-IDF based on interests, bio, and interactions."""
         parts: list[str] = []
+        
+        # 1. Explicit Interests (High weight)
         if user.interests:
-            parts.extend(user.interests * 3)  # Explicit interests weight
+            parts.extend([i.lower() for i in user.interests] * 4)
+            
+        # 2. User Bio (Medium weight)
         if user.bio:
-            parts.append(user.bio)
-        for event in attended_events:
+            parts.append(user.bio.lower())
+            
+        # 3. Interacted Events (Registered + Favorited)
+        for event in reference_events:
             tags_text = " ".join(event.tags) if event.tags else ""
-            parts.append(f"{event.category} {tags_text}")
+            # Category and tags are very important for similarity
+            parts.append(f"{event.category} {tags_text} {event.title}")
+            
         return " ".join(parts).lower().strip()
 
     def _calculate_hybrid_score(
@@ -139,22 +147,33 @@ class RecommendationEngine:
         if not user:
             return RecommendationResult(user_id=user_id, recommendations=[], based_on_interests=[], total_events_analyzed=0)
 
+        # 1. Gather User Interactions
         registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
+        favorite_ids = {e.id for e in user.favorites} if user.favorites else set()
+        interacted_ids = registered_ids.union(favorite_ids)
+        
         all_events = await self.event_repo.get_all_active_for_recommendation()
-        candidate_events = [e for e in all_events if e.id not in registered_ids]
-
+        
+        # 2. Filter Candidates (Only show events the user hasn't registered for or favorited)
+        candidate_events = [e for e in all_events if e.id not in interacted_ids]
+        
         if not candidate_events:
             return RecommendationResult(user_id=user_id, recommendations=[], based_on_interests=user.interests or [], total_events_analyzed=0)
 
-        attended_events = [e for e in all_events if e.id in registered_ids]
+        # 3. Reference Events for Scoring
+        # Combine attended and favorited events as "reference" for what the user likes
+        reference_events = [e for e in all_events if e.id in interacted_ids]
+        
         attended_categories = {}
-        for e in attended_events:
+        for e in reference_events:
             attended_categories[e.category] = attended_categories.get(e.category, 0) + 1
 
-        profile_text = self._build_user_profile_text(user, attended_events)
+        # 4. Content Scoring
+        profile_text = self._build_user_profile_text(user, reference_events)
         event_texts = [self._event_to_text(e) for e in candidate_events]
         content_scores = self._run_tfidf(profile_text, event_texts)
 
+        # 5. Hybrid Scoring
         hybrid_results = []
         for event, c_score in zip(candidate_events, content_scores):
             score, reason = self._calculate_hybrid_score(event, float(c_score), user.interests or [], attended_categories)
@@ -220,13 +239,16 @@ class RecommendationEngine:
         if not user: return 0.0
         event = await self.event_repo.get_active(event_id)
         if not event: return 0.0
-
+        
         registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
+        favorite_ids = {e.id for e in user.favorites} if user.favorites else set()
+        interacted_ids = registered_ids.union(favorite_ids)
+        
         all_events = await self.event_repo.get_all_active_for_recommendation()
-        attended_events = [e for e in all_events if e.id in registered_ids]
-        attended_categories = {e.category: 1 for e in attended_events}
+        reference_events = [e for e in all_events if e.id in interacted_ids]
+        attended_categories = {e.category: 1 for e in reference_events}
 
-        profile_text = self._build_user_profile_text(user, attended_events)
+        profile_text = self._build_user_profile_text(user, reference_events)
         event_text = self._event_to_text(event)
         c_scores = self._run_tfidf(profile_text, [event_text])
         
@@ -250,3 +272,32 @@ class RecommendationService:
 
     async def score_event_for_user(self, user_id: int, event_id: int) -> float:
         return await self.engine.score_event_for_user(user_id, event_id)
+
+    async def mark_scores(self, events: list[Event], user_id: int) -> None:
+        """Batch mark events with their recommendation scores for the UI."""
+        if not events or not user_id:
+            return
+            
+        user = await self.user_repo.get(user_id)
+        if not user:
+            return
+            
+        registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
+        favorite_ids = {e.id for e in user.favorites} if user.favorites else set()
+        interacted_ids = registered_ids.union(favorite_ids)
+        
+        all_active = await self.event_repo.get_all_active_for_recommendation()
+        reference_events = [e for e in all_active if e.id in interacted_ids]
+        attended_categories = {e.category: 1 for e in reference_events}
+        
+        profile_text = self.engine._build_user_profile_text(user, reference_events)
+        event_texts = [self.engine._event_to_text(e) for e in events]
+        
+        content_scores = self.engine._run_tfidf(profile_text, event_texts)
+        
+        for event, c_score in zip(events, content_scores):
+            score, reason = self.engine._calculate_hybrid_score(
+                event, float(c_score), user.interests or [], attended_categories
+            )
+            setattr(event, "score_percent", round(float(score) * 100))
+            setattr(event, "recommendation_reason", reason)

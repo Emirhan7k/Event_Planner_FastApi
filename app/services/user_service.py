@@ -30,7 +30,9 @@ class UserService:
         if not user:
             raise NotFoundError("User")
         updates = data.model_dump(exclude_none=True)
-        return await self.user_repo.update(user, updates)
+        updated_user = await self.user_repo.update(user, updates)
+        await self.session.commit()
+        return updated_user
 
     async def change_password(self, user_id: int, data: PasswordChangeRequest) -> None:
         user = await self.user_repo.get(user_id)
@@ -39,12 +41,15 @@ class UserService:
         if not verify_password(data.current_password, user.hashed_password):
             raise AuthError("Current password is incorrect.")
         await self.user_repo.update(user, {"hashed_password": hash_password(data.new_password)})
+        await self.session.commit()
 
     async def update_interests(self, user_id: int, data: UserInterestsUpdate) -> User:
         user = await self.user_repo.get(user_id)
         if not user:
             raise NotFoundError("User")
-        return await self.user_repo.update(user, {"interests": data.interests})
+        updated_user = await self.user_repo.update(user, {"interests": data.interests})
+        await self.session.commit()
+        return updated_user
 
     async def upload_avatar(self, user_id: int, file: UploadFile) -> User:
         user = await self.user_repo.get(user_id)
@@ -74,7 +79,9 @@ class UserService:
                 old_path.unlink(missing_ok=True)
 
         avatar_url = f"/{settings.UPLOAD_DIR}/avatars/{filename}"
-        return await self.user_repo.update(user, {"avatar_url": avatar_url})
+        updated_user = await self.user_repo.update(user, {"avatar_url": avatar_url})
+        await self.session.commit()
+        return updated_user
 
     async def get_user_stats(self, user_id: int) -> dict:
         user = await self.user_repo.get(user_id)

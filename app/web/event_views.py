@@ -40,7 +40,9 @@ async def event_list(
     
     if current_user:
         fav_service = FavoriteService(session)
+        rec_service = RecommendationService(session)
         await fav_service.mark_favorites(events, current_user.id)
+        await rec_service.mark_scores(events, current_user.id)
     return templates.TemplateResponse(
         request=request,
         name="events/list.html",
