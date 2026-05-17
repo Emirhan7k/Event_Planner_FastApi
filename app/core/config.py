@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from typing import List
 
 class Settings(BaseSettings):
@@ -25,6 +26,17 @@ class Settings(BaseSettings):
     # Extra settings from .env
     DEBUG: bool = False
     MAX_UPLOAD_SIZE_MB: int = 5
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "production", "prod"}:
+                return False
+            if normalized in {"development", "dev"}:
+                return True
+        return value
     
     # Pydantic Settings Configuration
     model_config = SettingsConfigDict(

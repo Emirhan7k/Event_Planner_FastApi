@@ -18,6 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Error: Validation failed");
         }
     });
+
+    document.querySelectorAll('[data-scroll-target]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const target = document.getElementById(button.dataset.scrollTarget);
+            if (!target) return;
+
+            const direction = Number(button.dataset.scrollDirection || 1);
+            const amount = Math.max(280, Math.floor(target.clientWidth * 0.85));
+            target.scrollBy({ left: amount * direction, behavior: 'smooth' });
+        });
+    });
 });
 
 // Utility to handle notifications (placeholder for a better toast system)

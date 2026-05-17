@@ -8,6 +8,7 @@ from app.core.templates import templates
 
 from app.db.session import get_db
 from app.services.event_service import EventService
+from app.services.favorite_service import FavoriteService
 from app.services.recommendation_service import RecommendationService
 from app.services.registration_service import RegistrationService
 from app.web.deps import require_login_cookie
@@ -24,22 +25,27 @@ async def dashboard(
     rec_service = RecommendationService(session)
     reg_service = RegistrationService(session)
     event_service = EventService(session)
+    fav_service = FavoriteService(session)
 
     rec_result = await rec_service.get_recommendations(current_user.id, top_k=6)
+    recommendations = rec_result.recommendations
+    await fav_service.mark_favorites(recommendations, current_user.id)
+    await reg_service.mark_registration_status(recommendations, current_user.id)
 
     # User's registrations
     registrations = await reg_service.get_my_registrations(current_user)
 
     # Events created by the user
-    event_result = await event_service.get_events_paginated(page=1, size=20, upcoming_only=False)
-    my_events = [e for e in event_result.items if e.owner_id == current_user.id]
+    my_events = await event_service.event_repo.get_by_owner(current_user.id)
+    await fav_service.mark_favorites(my_events, current_user.id)
+    await reg_service.mark_registration_status(my_events, current_user.id)
 
     return templates.TemplateResponse(
         request=request,
         name="dashboard/index.html",
         context={
             "current_user": current_user,
-            "recommendations": rec_result.recommendations,
+            "recommendations": recommendations,
             "registrations": registrations,
             "my_events": my_events,
         },

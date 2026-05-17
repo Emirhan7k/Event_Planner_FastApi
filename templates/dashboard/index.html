@@ -3,29 +3,28 @@
 {% block content %}
 <section style="padding: 8rem 2rem 4rem;">
     <div style="max-width: 1200px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
             <div>
                 <h1 style="font-size: 2.5rem;">Welcome back, {{ current_user.username }}!</h1>
                 <p style="color: var(--text-muted);">Here's what's happening in your event world.</p>
             </div>
-            <a href="/events/create" class="btn btn-primary">+ Create Event</a>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
+        <div class="dashboard-layout" style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h2>Recommended Just For You</h2>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; max-width: 50%;">
-                        {% for interest in current_user.interests %}
-                        <span style="font-size: 0.7rem; background: var(--glass); padding: 0.2rem 0.6rem; border-radius: 1rem; border: 1px solid var(--glass-border); color: var(--text-muted);">#{{ interest }}</span>
-                        {% endfor %}
+                    <div class="dashboard-heading-actions">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                            {% for interest in current_user.interests %}
+                            <span style="font-size: 0.7rem; background: var(--glass); padding: 0.2rem 0.6rem; border-radius: 1rem; border: 1px solid var(--glass-border); color: var(--text-muted);">#{{ interest }}</span>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
-                <div class="rec-scroll-container">
+                <div class="recommendation-grid">
                     {% for event in recommendations %}
-                        <div class="rec-scroll-item">
-                            {% include "partials/event_card.html" %}
-                        </div>
+                        {% include "partials/event_card.html" %}
                     {% else %}
                         <div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-muted); width: 100%;">
                             Tell us more about your interests in your profile to get personalized suggestions!
@@ -33,13 +32,22 @@
                     {% endfor %}
                 </div>
 
-                <h2 style="margin: 4rem 0 2rem;">My Registered Events</h2>
-                <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 0; width: 100%;">
+                <div class="section-row-title">
+                    <h2>My Registered Events</h2>
+                    <div class="scroll-controls">
+                        <button type="button" class="scroll-btn" data-scroll-target="registered-scroll" data-scroll-direction="-1" aria-label="Scroll registered events left"><i class="fas fa-chevron-left"></i></button>
+                        <button type="button" class="scroll-btn" data-scroll-target="registered-scroll" data-scroll-direction="1" aria-label="Scroll registered events right"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div id="registered-scroll" class="rec-scroll-container dashboard-card-scroll">
                     {% for reg in registrations %}
-                        <div class="event-card glass-card">
+                        <div class="event-card glass-card rec-scroll-item">
                             <img src="{{ reg.event_image_url or 'https://via.placeholder.com/400x200' }}" class="event-image">
                             <div class="event-details">
-                                <span class="event-category">{{ reg.event_category }}</span>
+                                <div class="event-meta-row">
+                                    <span class="event-category">{{ reg.event_category }}</span>
+                                    <span class="status-pill status-joined">Joined</span>
+                                </div>
                                 <h3 class="event-title">{{ reg.event_title }}</h3>
                                 <div class="event-info">
                                     <span>{{ reg.event_date.strftime('%B %d, %Y') }}</span>
@@ -48,7 +56,7 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem; text-align: center; color: var(--text-muted);">
+                        <div class="glass-card" style="padding: 3rem; text-align: center; color: var(--text-muted); min-width: 100%;">
                             You haven't joined any events yet. <a href="/events" style="color: var(--primary);">Go explore!</a>
                         </div>
                     {% endfor %}
@@ -56,6 +64,8 @@
             </div>
 
             <aside>
+                <a href="/events/create" class="btn btn-primary dashboard-create-btn">+ Create Event</a>
+
                 <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
                     <h3 style="margin-bottom: 1.5rem;">Quick Stats</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
@@ -90,10 +100,15 @@
                 <div class="glass-card" style="padding: 2rem;">
                     <h3 style="margin-bottom: 1.5rem;">Events I'm Organizing</h3>
                     {% for event in my_events %}
-                        <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                        <div class="organizing-list-item">
                             <div>
                                 <div style="font-weight: 600;">{{ event.title }}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ event.registered_count }} joined</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ event.registered_count }} joined &middot; {{ event.capacity - event.registered_count }} open</div>
+                                {% if event.is_registered %}
+                                    <span class="status-pill status-joined">Joined by you</span>
+                                {% else %}
+                                    <span class="status-pill status-open">Not joined by you</span>
+                                {% endif %}
                             </div>
                             <a href="/events/{{ event.id }}" style="color: var(--primary); font-size: 0.875rem;">Manage</a>
                         </div>

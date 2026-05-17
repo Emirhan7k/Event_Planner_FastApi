@@ -81,6 +81,9 @@ class EventRead(BaseModel):
     registered_count: int
     is_full: bool
     is_favorited: bool = False
+    is_registered: bool = False
+    score_percent: int | None = None
+    recommendation_reason: str | None = None
 
 
 class EventListResponse(BaseModel):

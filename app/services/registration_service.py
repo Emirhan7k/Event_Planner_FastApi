@@ -51,6 +51,15 @@ class RegistrationService:
     async def is_registered(self, user_id: int, event_id: int) -> bool:
         return await self.reg_repo.is_registered(user_id, event_id)
 
+    async def mark_registration_status(self, events: list, user_id: int | None) -> None:
+        if not user_id or not events:
+            return
+
+        registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
+        for event in events:
+            event_id = getattr(event, "id", None)
+            setattr(event, "is_registered", event_id in registered_ids)
+
     async def get_my_registrations(self, current_user: User) -> list[RegistrationWithEvent]:
         regs = await self.reg_repo.get_user_registrations(
             current_user.id, status=RegistrationStatus.CONFIRMED

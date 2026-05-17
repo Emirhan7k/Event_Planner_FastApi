@@ -15,6 +15,7 @@ from app.services.event_service import EventService
 from app.services.comment_service import CommentService
 from app.services.registration_service import RegistrationService
 from app.services.favorite_service import FavoriteService
+from app.services.recommendation_service import RecommendationService
 from app.web.deps import get_current_user_from_cookie, require_login_cookie
 
 router = APIRouter(prefix="/events", tags=["web-events"])
@@ -40,8 +41,10 @@ async def event_list(
     
     if current_user:
         fav_service = FavoriteService(session)
+        reg_service = RegistrationService(session)
         rec_service = RecommendationService(session)
         await fav_service.mark_favorites(events, current_user.id)
+        await reg_service.mark_registration_status(events, current_user.id)
         await rec_service.mark_scores(events, current_user.id)
     return templates.TemplateResponse(
         request=request,

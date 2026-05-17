@@ -278,15 +278,15 @@ class RecommendationService:
         if not events or not user_id:
             return
             
-        user = await self.user_repo.get(user_id)
+        user = await self.engine.user_repo.get(user_id)
         if not user:
             return
             
-        registered_ids = set(await self.reg_repo.get_user_confirmed_event_ids(user_id))
+        registered_ids = set(await self.engine.reg_repo.get_user_confirmed_event_ids(user_id))
         favorite_ids = {e.id for e in user.favorites} if user.favorites else set()
         interacted_ids = registered_ids.union(favorite_ids)
         
-        all_active = await self.event_repo.get_all_active_for_recommendation()
+        all_active = await self.engine.event_repo.get_all_active_for_recommendation()
         reference_events = [e for e in all_active if e.id in interacted_ids]
         attended_categories = {e.category: 1 for e in reference_events}
         

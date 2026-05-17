@@ -237,12 +237,46 @@ nav.scrolled {
     padding: 1.5rem;
 }
 
+.event-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
 .event-category {
     font-size: 0.75rem;
     text-transform: uppercase;
     font-weight: 700;
     color: var(--primary);
-    margin-bottom: 0.5rem;
+}
+
+.status-pill {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    padding: 0.18rem 0.55rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.status-joined {
+    color: var(--success);
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.28);
+}
+
+.status-open {
+    color: var(--text-muted);
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.status-full {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.28);
 }
 
 .event-title {
@@ -376,6 +410,15 @@ footer {
     .detail-grid {
         grid-template-columns: 1fr !important;
     }
+    .dashboard-layout {
+        grid-template-columns: 1fr !important;
+    }
+    .recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .dashboard-heading-actions {
+        max-width: none;
+    }
     aside {
         position: relative !important;
         top: 0 !important;
@@ -391,6 +434,18 @@ footer {
     }
     .event-grid {
         padding: 0 1rem;
+    }
+    .dashboard-header,
+    .section-row-title,
+    .dashboard-heading-actions {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+    .dashboard-heading-actions {
+        width: 100%;
+    }
+    .recommendation-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -514,17 +569,130 @@ footer {
     gap: 2rem;
     padding: 1rem 0.5rem 2rem;
     scroll-snap-type: x mandatory;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-light) transparent;
+    scroll-behavior: smooth;
 }
 
 .rec-scroll-container::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    height: 8px;
+}
+
+.rec-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.rec-scroll-container::-webkit-scrollbar-thumb {
+    background: var(--surface-light);
+    border-radius: 999px;
 }
 
 .rec-scroll-item {
     min-width: 320px;
     flex: 0 0 auto;
     scroll-snap-align: start;
+}
+
+.dashboard-card-scroll .rec-scroll-item {
+    width: 320px;
+}
+
+.recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+}
+
+.dashboard-create-btn {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-heading-actions,
+.section-row-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dashboard-heading-actions {
+    max-width: 58%;
+}
+
+.section-row-title {
+    margin: 4rem 0 1rem;
+}
+
+.section-row-title.compact {
+    margin: 0 0 1.25rem;
+}
+
+.scroll-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scroll-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.scroll-btn:hover {
+    background: var(--surface-light);
+    transform: translateY(-1px);
+}
+
+.organizing-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-bottom: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-light) transparent;
+}
+
+.organizing-item {
+    min-width: 250px;
+    flex: 0 0 250px;
+    scroll-snap-align: start;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.organizing-list-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.organizing-list-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
 }
 
 /* Badge Enhancements */

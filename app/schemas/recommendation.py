@@ -20,6 +20,7 @@ class RecommendedEvent(BaseModel):
     registered_count: int
     is_full: bool
     is_favorited: bool = False
+    is_registered: bool = False
     score: float  # cosine similarity 0.0–1.0
     score_percent: int  # score * 100 rounded
     recommendation_reason: str | None = None
@@ -43,5 +44,6 @@ class SimilarEvent(BaseModel):
     source_url: str | None = None
     event_date: datetime
     is_favorited: bool = False
+    is_registered: bool = False
     score: float
     score_percent: int
