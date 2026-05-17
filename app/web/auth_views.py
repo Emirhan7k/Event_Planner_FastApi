@@ -1,5 +1,7 @@
 """Auth web views: login, register, logout."""
 
+import logging
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +15,7 @@ from app.services.auth_service import AuthService
 from app.web.deps import get_current_user_from_cookie
 
 router = APIRouter(prefix="/auth", tags=["web-auth"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -88,6 +91,7 @@ async def register_submit(
         )
         return response
     except (AppError, Exception) as e:
+        logger.exception("Web registration failed")
         # Handle both our AppErrors and Pydantic ValidationErrors
         error_msg = str(e)
         if hasattr(e, "detail"):

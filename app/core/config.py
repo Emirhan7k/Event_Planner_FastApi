@@ -1,3 +1,6 @@
+from pathlib import Path
+from urllib.parse import urlparse
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 from typing import List
@@ -47,3 +50,14 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+
+if settings.DATABASE_URL.startswith("sqlite"):
+    parsed = urlparse(settings.DATABASE_URL)
+    db_path = parsed.path
+    if settings.DATABASE_URL.startswith("sqlite:///./"):
+        db_path = settings.DATABASE_URL.removeprefix("sqlite:///./")
+    elif settings.DATABASE_URL.startswith("sqlite:///"):
+        db_path = parsed.path.lstrip("/")
+
+    if db_path and db_path != ":memory:":
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
