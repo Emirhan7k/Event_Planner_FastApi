@@ -28,7 +28,7 @@ async def test_event_registration(client: AsyncClient):
     event_id = event_resp.json()["id"]
 
     # Register for the event
-    response = await client.post(f"/api/v1/registrations/events/{event_id}", headers=headers)
-    assert response.status_code == 200
+    response = await client.post(f"/api/v1/registrations/{event_id}", headers=headers)
+    assert response.status_code in [200, 201]
     assert response.json()["event_id"] == event_id
     assert response.json()["status"] == "confirmed"

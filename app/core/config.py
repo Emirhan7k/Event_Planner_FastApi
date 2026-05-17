@@ -12,13 +12,13 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Security
-    SECRET_KEY: str = "your-super-secret-key-change-it-in-production"
+    SECRET_KEY: str = "135e6714235de3a416698d0e3068bb46c98a8849c54ef117b245bc9f19355b23"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./data/event_planner.db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:4111@localhost:5432/web_project"
     
     # Uploads
     UPLOAD_DIR: str = "static/uploads"
@@ -40,6 +40,13 @@ class Settings(BaseSettings):
             if normalized in {"development", "dev"}:
                 return True
         return value
+    
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_url(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
     
     # Pydantic Settings Configuration
     model_config = SettingsConfigDict(

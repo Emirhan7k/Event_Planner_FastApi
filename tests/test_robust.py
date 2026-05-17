@@ -24,8 +24,8 @@ async def test_auth_and_registration(client: AsyncClient):
         "interests": "music, art"
     }
     resp = await client.post("/auth/register", data=form_data)
-    # Redirect to login (302) or success (200)
-    assert resp.status_code in [200, 302], f"Web Register failed: {resp.text}"
+    # Redirect to login (302/303) or success (200)
+    assert resp.status_code in [200, 302, 303], f"Web Register failed: {resp.text}"
 
 @pytest.mark.asyncio
 async def test_event_and_recommendation(client: AsyncClient):

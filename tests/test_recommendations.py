@@ -38,7 +38,7 @@ async def test_recommendations(client: AsyncClient):
     }, headers=headers)
 
     # Get recommendations
-    response = await client.get("/api/v1/recommendations", headers=headers)
+    response = await client.get("/api/v1/recommendations/me", headers=headers)
     assert response.status_code == 200
     recommendations = response.json()["recommendations"]
     

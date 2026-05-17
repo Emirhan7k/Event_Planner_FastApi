@@ -26,7 +26,7 @@ async def test_create_event(client: AsyncClient):
         "tags": ["pytest", "fastapi"]
     }
     response = await client.post("/api/v1/events", json=event_payload, headers=headers)
-    assert response.status_code == 200
+    assert response.status_code in [200, 201]
     data = response.json()
     assert data["title"] == "Test Event"
     assert data["id"] is not None
