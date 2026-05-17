@@ -13,6 +13,9 @@ from app.core.config import settings
 connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+elif "localhost" not in settings.DATABASE_URL and "127.0.0.1" not in settings.DATABASE_URL:
+    # Remote PostgreSQL (e.g. Render) requires SSL
+    connect_args = {"ssl": "require"}
 
 # Create async engine
 engine = create_async_engine(
